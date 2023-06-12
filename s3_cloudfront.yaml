@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
-  Create S3 bucket, S3 bucket policy, CloudFront distribution, Origin Access Control
+  Create S3 bucket, S3 bucket policy, S3 IAM policy, S3 IAM group, S3 IAM user,
+  CloudFront distribution, Origin Access Control
 Metadata:
   # Specify input parameter grouping and ordering
   "AWS::CloudFormation::Interface": 
@@ -62,6 +63,42 @@ Resources:
                       - ''
                       - - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/'
                         - !Ref CloudFront
+  S3IAMPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Sub ${Prefix}S3IAMPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:ListAllMyBuckets'
+            Resource: 
+              - 'arn:aws:s3:::*'
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource: 
+              - !Sub 'arn:aws:s3:::${BucketName}'
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+              - 's3:GetObject'
+            Resource: 
+              - !Sub 'arn:aws:s3:::${BucketName}/*'
+      Groups:
+        - !Ref S3IAMGroup
+  S3IAMGroup:
+    Type: 'AWS::IAM::Group'
+    Properties:
+      GroupName: !Sub '${Prefix}S3AccessGroup'
+  S3IAMUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: !Sub '${Prefix}S3AccessUser'
+      Groups:
+        - !Ref S3IAMGroup
   CloudFront:
     Type: AWS::CloudFront::Distribution
     Properties: 
